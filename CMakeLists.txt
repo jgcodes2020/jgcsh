@@ -8,6 +8,15 @@ project(jgcsh
 add_subdirectory(modules/lned)
 add_subdirectory(modules/shell)
 
+add_executable(jgcsh
+  src/main.cpp
+)
+
+set_target_properties(jgcsh PROPERTIES
+  CXX_STANDARD 17
+  CXX_STANDARD_REQUIRED true
+)
+
 target_link_libraries(jgcsh
   PRIVATE jgcsh::lned
 )
