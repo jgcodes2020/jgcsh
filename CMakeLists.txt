@@ -5,8 +5,9 @@ project(jgcsh
   VERSION 0.1.0 
 )
 
+add_subdirectory(modules/lexy)
 add_subdirectory(modules/lned)
-add_subdirectory(modules/shell)
+add_subdirectory(modules/sheval)
 
 add_executable(jgcsh
   src/main.cpp

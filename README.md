@@ -4,4 +4,6 @@ A dumb, Unix-like shell, complete with line editing. Working on parsing shell sy
 ## Modules
 - lned, a basic line editor
 - sheval, a shell syntax evaluator
-- shell, the actuall shell
+
+## Dependencies
+- Lexy, a C++ parsing library.
