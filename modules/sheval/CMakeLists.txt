@@ -6,7 +6,7 @@ project(jgcsh_sheval
 )
 
 add_library(jgcsh_sheval
-  src/lned.cpp
+  src/sh_split.cpp
 )
 add_library(jgcsh::sheval ALIAS jgcsh_sheval)
 
