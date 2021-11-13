@@ -5,7 +5,6 @@ project(jgcsh
   VERSION 0.1.0 
 )
 
-add_subdirectory(modules/lexy)
 add_subdirectory(modules/lned)
 add_subdirectory(modules/sheval)
 
@@ -20,10 +19,6 @@ set_target_properties(jgcsh PROPERTIES
 
 target_link_libraries(jgcsh
   PRIVATE jgcsh::lned jgcsh::sheval
-)
-
-target_link_libraries(jgcsh_sheval
-  PRIVATE foonathan::lexy
 )
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS true)

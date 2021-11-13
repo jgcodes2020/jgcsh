@@ -18,6 +18,6 @@ namespace jgcsh::lex {
    * 
    * @param toks the tokens from split_quotes
    */
-  void isolate_operators(std::vector<std::string>& toks);
+  std::vector<std::string> isolate_operators(const std::vector<std::string>& toks);
 }  // namespace jgcsh::lex
 #endif
