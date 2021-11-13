@@ -1,9 +1,12 @@
 #include <cctype>
 #include <iostream>
 #include <locale>
+#include <stack>
+#include <stdexcept>
 #include <vector>
 #include <sh_split.hpp>
 
+using std::stack;
 using std::vector, std::string, std::string_view;
 
 namespace {
@@ -12,58 +15,88 @@ namespace {
     static std::locale lc;
     return lc;
   }
-}
+}  // namespace
 
 vector<string> jgcsh::lex::split_quotes(string_view cmd) {
   std::cout << "cmd = " << cmd << "\n";
   vector<string> res {};
-  string cur   = "";
-  char quote   = '\0';
+  string cur = "";
+  stack<char> quote;
   bool comment = false;
-  // if true, don't push token
   bool skip_ws = true;
   for (auto i = cmd.begin(); i != cmd.end(); i++) {
     if (!comment) {
-      switch (quote) {
-        case '\\': {
-          cur.push_back(*i);
-          quote = '\0';
+      if (!quote.empty()) {
+        switch (quote.top()) {
+          case '(': {
+          } break;
+          case '\\': {
+            cur.push_back(*i);
+            quote.pop();
+            continue;
+          }
+          case '\'':
+          case '\"': {
+            cur.push_back(*i);
+            if (*i == quote.top())
+              quote.pop();
+            continue;
+          }
+        }
+      }
+      switch (*i) {
+        case '\n':
+        case ';': {
+          // beginning of new statement
+          res.push_back(cur);
+          res.emplace_back("\n");
+          cur.clear();
         } break;
+        case '(': {
+          // subshell
+          quote.push('(');
+          // subshell expansion
+          if (!cur.empty() && cur.back() == '$') {
+            cur.pop_back();
+            if (!cur.empty())
+              res.push_back(cur);
+            res.emplace_back("$(");
+          }
+          else {
+            res.push_back(cur);
+            res.emplace_back("(");
+          }
+          cur.clear();
+        } break;
+        case ')': {
+          if (quote.empty() || quote.top() != '(')
+            throw std::runtime_error("Mismatched brackets");
+          quote.pop();
+          res.push_back(cur);
+          res.emplace_back(")");
+          cur.clear();
+        } break;
+        case '\\':
         case '\'':
         case '\"': {
-          cur.push_back(*i);
-          if (*i == quote)
-            quote = '\0';
-        } break;
+          // beginning of quoted value
+          quote.push(*i);
+        };
         default: {
-          switch (*i) {
-            case '\n':
-            case ';': {
+          // check for ws delimiter
+          if (std::isspace(*i, c_locale())) {
+            if (!skip_ws) {
               res.push_back(cur);
-              res.emplace_back("\n");
               cur.clear();
-            } break;
-            case '\\':
-            case '\'':
-            case '\"': {
-              quote = *i;
-            };
-            default: {
-              if (std::isspace(*i, c_locale())) {
-                if (!skip_ws) {
-                  res.push_back(cur);
-                  cur.clear();
-                }
-                break;
-              }
-              cur.push_back(*i);
-              // comments only apply at the beginning of a word
-              if (cur == "#") {
-                comment = true;
-                cur.clear();
-                continue;
-              }
-            } break;
+            }
+            break;
+          }
+          cur.push_back(*i);
+          // check for a comment (# at beginning of word)
+          if (cur == "#") {
+            comment = true;
+            cur.clear();
+            break;
           }
         } break;
       }
