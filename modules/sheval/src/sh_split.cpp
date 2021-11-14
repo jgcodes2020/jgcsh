@@ -22,21 +22,44 @@ vector<string> jgcsh::lex::split_quotes(string_view cmd) {
   vector<string> res {};
   string cur = "";
   stack<char> quote;
-  bool comment = false;
-  bool skip_ws = true;
+  bool comment      = false;
+  bool skip_ws      = true;
+  bool is_expansion = false;
   for (auto i = cmd.begin(); i != cmd.end(); i++) {
     if (!comment) {
       if (!quote.empty()) {
         switch (quote.top()) {
           case '(': {
-          } break;
+            switch (*i) {
+              case ')': {
+                quote.pop();
+              } break;
+              case '\\':
+              case '\'':
+              case '\"': {
+                quote.push(*i);
+              } break;
+            }
+            cur.push_back(*i);
+            continue;
+          }
           case '\\': {
             cur.push_back(*i);
             quote.pop();
             continue;
           }
-          case '\'':
           case '\"': {
+            if (*i == '\"' && *i == quote.top()) {
+              quote.pop();
+            }
+            else if (is_expansion && *i == '(') {
+              quote.push('(');
+            }
+            cur.push_back(*i);
+            is_expansion = (*i == '$');
+            continue;
+          }
+          case '\'': {
             cur.push_back(*i);
             if (*i == quote.top())
               quote.pop();
@@ -52,29 +75,8 @@ vector<string> jgcsh::lex::split_quotes(string_view cmd) {
           res.emplace_back("\n");
           cur.clear();
         } break;
-        case '(': {
-          // subshell
-          quote.push('(');
-          // subshell expansion
-          if (!cur.empty() && cur.back() == '$') {
-            cur.pop_back();
-            if (!cur.empty())
-              res.push_back(cur);
-            res.emplace_back("$(");
-          }
-          else {
-            res.push_back(cur);
-            res.emplace_back("(");
-          }
-          cur.clear();
-        } break;
         case ')': {
-          if (quote.empty() || quote.top() != '(')
-            throw std::runtime_error("Mismatched brackets");
-          quote.pop();
-          res.push_back(cur);
-          res.emplace_back(")");
-          cur.clear();
+          throw std::runtime_error("Mismatched brackets");
         } break;
         case '\\':
         case '\'':
@@ -98,6 +100,8 @@ vector<string> jgcsh::lex::split_quotes(string_view cmd) {
             cur.clear();
             break;
           }
+
+          is_expansion = (*i == '$');
         } break;
       }
       skip_ws = (std::isspace(*i, c_locale()) || *i == ';');
